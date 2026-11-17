@@ -295,7 +295,7 @@ class Builder:
         p2.paragraph_format.space_after = Pt(18)
         set_run_font(p2.add_run("Корпоративная система защиты информации"), BODY_FONT, 9,
                      color=RGBColor(0xDD, 0xE6, 0xF2))
-        for line in ["Установка Ubuntu Server 24.04 LTS", "и развёртывание",
+        for line in ["Установка Ubuntu Server 26.10", "и развёртывание",
                      "Kaspersky Security Center"]:
             ph = cell.add_paragraph()
             ph.paragraph_format.space_after = Pt(0)
@@ -308,7 +308,7 @@ class Builder:
         p.paragraph_format.space_after = Pt(2)
         set_run_font(p.add_run("Практическое руководство"), BODY_FONT, 13, bold=True, color=STEEL)
         p = doc.add_paragraph()
-        set_run_font(p.add_run("Kaspersky Security Center Linux 15.2 · MariaDB 10.11 · Web Console"),
+        set_run_font(p.add_run("Kaspersky Security Center Linux 17 · MariaDB 11.8 · Web Console 17"),
                      BODY_FONT, 10.5, color=GREY)
 
         p = doc.add_paragraph()
@@ -332,7 +332,7 @@ class Builder:
             ("Версия документа", meta.DOC_VERSION),
             ("Дата выпуска", meta.DOC_DATE),
             ("Статус", meta.DOC_STATUS),
-            ("Область применения", "Ubuntu Server 24.04 LTS, KSC Linux 15.2"),
+            ("Область применения", "Ubuntu Server 26.10, KSC Linux 17"),
             ("Разработал", meta.DOC_AUTHOR),
         ]
         t = doc.add_table(rows=len(rows), cols=2)

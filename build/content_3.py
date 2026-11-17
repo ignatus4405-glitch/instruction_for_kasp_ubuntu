@@ -8,32 +8,57 @@ B = BLOCKS.append
 B(("h1", "6. Установка Kaspersky Security Center Web Console"))
 
 B(("p", "Web Console — единственная консоль управления для KSC Linux. Она устанавливается отдельным "
-        "пакетом и подключается к Серверу администрирования по порту 13299. Web Console может быть "
-        "установлена на том же сервере (вариант А) или на отдельном (вариант Б)."))
+        "пакетом на тот же сервер, где работают Сервер администрирования и СУБД, и подключается "
+        "к ним через локальный интерфейс: порт 13299 (OpenAPI) и порты 4444/9050 (служба IAM). "
+        "Наружу публикуется только веб-интерфейс консоли на порту 8080."))
 
 B(("h2", "6.1. Подготовка файла ответов"))
 B(("p", "Установщик Web Console настраивается JSON-файлом `/etc/ksc-web-console-setup.json`. "
         "Создайте его до установки пакета:"))
+B(("p", "Сервер администрирования 17 аутентифицирует пользователей через службу IAM, поэтому в файле "
+        "ответов обязательно описывается блок `trusted` с параметрами подключения к IAM (порты 4444 и "
+        "9050) и к OpenAPI Сервера администрирования (порт 13299):"))
 B(("code", [
     "cat > /etc/ksc-web-console-setup.json <<'EOF'",
     "{",
     "  \"address\": \"ksc01.company.local\",",
     "  \"port\": 8080,",
     "  \"defaultLangId\": 1049,",
+    "  \"trusted\": {",
+    "    \"KSC 17 (ksc01)\": {",
+    "      \"iamHost\": \"ksc01.company.local\",",
+    "      \"iamOAuthPort\": 4444,",
+    "      \"iamProxyPort\": 9050,",
+    "      \"iamCertPath\": \"/var/opt/kaspersky/klnagent_srv/iam/main_certificate.pem\",",
+    "      \"iamPATPath\": \"/var/opt/kaspersky/klnagent_srv/iam/initial_token.txt\",",
+    "      \"kscPort\": 13299,",
+    "      \"kscCertPath\": \"/var/opt/kaspersky/klnagent_srv/1093/cert/klserver.cer\"",
+    "    }",
+    "  },",
     "  \"acceptEula\": true",
     "}",
     "EOF",
     "chmod 600 /etc/ksc-web-console-setup.json",
     "python3 -m json.tool /etc/ksc-web-console-setup.json   # проверка синтаксиса",
+    "ls -l /var/opt/kaspersky/klnagent_srv/iam/             # сертификат IAM и файл токена",
 ]))
 B(("table", {
     "head": ["Параметр", "Назначение и правила заполнения"],
     "widths": [26, 74],
     "rows": [
-        ["address", "Адрес, по которому браузеры подключаются к консоли. Для варианта А — FQDN сервера KSC "
-                    "(тот же, что указан при установке). Для варианта Б — внешний адрес сервера Web Console"],
+        ["address", "Адрес, по которому браузеры администраторов открывают консоль, — FQDN сервера KSC "
+                    "(тот же, что указан при установке KSC, например `ksc01.company.local`)"],
         ["port", "Порт веб-интерфейса, по умолчанию 8080. Рекомендуется значение выше 1024"],
         ["defaultLangId", "Язык интерфейса: 1049 — русский, 1033 — английский. Необязательный параметр"],
+        ["trusted", "Объект с параметрами подключения к Серверу администрирования. Ключ объекта "
+                    "(`KSC 17 (ksc01)`) — произвольное имя, которое отображается в окне входа"],
+        ["iamHost / iamOAuthPort / iamProxyPort", "Адрес службы IAM и её порты: 4444 (OAuth) и 9050 "
+                                                  "(прокси-сервис). Значения по умолчанию менять не требуется"],
+        ["iamCertPath / iamPATPath", "Пути к сертификату IAM "
+                                     "`/var/opt/kaspersky/klnagent_srv/iam/main_certificate.pem` и файлу "
+                                     "первичного токена `iam/initial_token.txt`"],
+        ["kscPort / kscCertPath", "Порт OpenAPI (13299) и сертификат Сервера администрирования "
+                                  "`/var/opt/kaspersky/klnagent_srv/1093/cert/klserver.cer`"],
         ["acceptEula", "Обязательное подтверждение принятия Лицензионного соглашения: `true`"],
         ["certPath / keyPath", "Необязательные пути к пользовательскому сертификату и ключу в формате PEM "
                                "(раздел 6.6)"],
@@ -41,11 +66,15 @@ B(("table", {
 }))
 B(("warn", "Ошибка в JSON (лишняя запятая, одинарные кавычки, комментарии) приводит к неудачной "
            "установке: консоль не запустится. Всегда проверяйте файл командой `python3 -m json.tool`."))
+B(("note", "Сертификаты и файл токена IAM уже находятся на этом же сервере (каталог "
+           "`/var/opt/kaspersky/klnagent_srv/iam`), поэтому пути в файле ответов берутся как есть. "
+           "Сертификат и токен читаются только при установке — если они изменились, консоль нужно "
+           "переустановить (раздел 6.6)."))
 
 B(("h2", "6.2. Установка пакета"))
 B(("code", [
     "cd /root/ksc_install",
-    "dpkg -i ksc-web-console-15.2.<сборка>.x86_64.deb",
+    "dpkg -i ksc-web-console-17.0.0.<сборка>.x86_64.deb",
     "systemctl restart 'KSC*'",
     "systemctl status 'KSC*' --no-pager",
 ]))
@@ -69,22 +98,23 @@ B(("code", [
     "curl -k -I https://ksc01.company.local:8080   # ожидается HTTP/1.1 200 и заголовки KSC",
     "journalctl -u KSCWebConsole.service -n 50 --no-pager",
 ]))
-B(("p", "Дополнительно откройте порт Web Console в межсетевом экране (раздел 3.10.7): "
-        "`ufw allow 8080/tcp`."))
+B(("p", "Убедитесь, что веб-интерфейс разрешён в межсетевом экране только для сегмента администраторов "
+        "(раздел 3.10.7): `ufw allow from 192.168.10.0/24 to any port 8080 proto tcp` и "
+        "`ufw status verbose`."))
 
 B(("h2", "6.4. Первый вход в Web Console"))
 B(("ol", [
     "На рабочем месте администратора откройте браузер и введите адрес `https://ksc01.company.local:8080`.",
     "При предупреждении о самоподписанном сертификате выберите «Дополнительные параметры» → "
     "«Перейти на сайт» (в Chrome/Edge) либо добавьте сертификат в доверенные (раздел 6.6).",
-    "Введите учётную запись администратора KSC (`ksc`) и пароль, заданный на шаге 5.5.",
+    "Введите учётную запись администратора KSC (`ksc`) и пароль, заданный при её создании (раздел 5.6).",
     "При первом входе откроется мастер первичной настройки: укажите параметры сервера "
     "(имя, язык интерфейса, участие в KSN, параметры обновлений) и завершите мастер.",
 ]))
 B(("warn", "Не входите в Web Console под учётной записью `ksc` ОС — это разные учётные записи. "
            "Совпадение имён не означает совпадение паролей."))
 B(("figure", {"path": "assets/fig_webconsole.png", "width_mm": 166,
-              "caption": "Рисунок 7. Основное окно Web Console после входа (схема)"}))
+              "caption": "Рисунок 6. Основное окно Web Console после входа (схема)"}))
 
 B(("h2", "6.5. Базовые настройки Сервера администрирования"))
 B(("p", "После первого входа рекомендуется проверить и задать следующие параметры."))
@@ -124,7 +154,7 @@ B(("warn", "Параметры сертификата считываются т�
 B(("h1", "7. Первичная настройка Kaspersky Security Center"))
 
 B(("p", "Раздел описывает минимальный набор действий, после которых система готова к защите устройств. "
-        "Названия элементов интерфейса приведены для Web Console 15.2 с русским языком; в других "
+        "Названия элементов интерфейса приведены для Web Console 17 с русским языком; в других "
         "сборках формулировки могут незначительно отличаться."))
 
 B(("h2", "7.1. Проверка учётных записей администраторов"))
@@ -206,7 +236,7 @@ B(("warn", "Политики применяются к устройствам, �
 B(("h2", "7.6. Обновление баз и проверка работоспособности"))
 B(("code", [
     "# на сервере KSC: проверка состояния служб и доступности консоли",
-    "systemctl is-active kladminserver_srv klwebsrv_srv klnagent_srv klactprx_srv",
+    "systemctl is-active klnagent_srv kladminserver_srv klactprx_srv klwebsrv_srv kliam_srv",
     "curl -k -s -o /dev/null -w '%{http_code}\\n' https://ksc01.company.local:8080",
 ]))
 B(("p", "В Web Console проверьте:"))
@@ -221,26 +251,28 @@ B(("ul", [
 B(("h1", "8. Резервное копирование, обновление и обслуживание"))
 
 B(("h2", "8.1. Резервное копирование базы данных"))
-B(("p", "Логический дамп БД — обязательная часть резервной копии. Выполняйте его ежедневно по "
-        "расписанию (cron) и перед любыми обновлениями. Состав и порядок операций показаны на рисунке 8."))
+B(("p", "Логический дамп БД — обязательная часть резервной копии. В KSC 17 данных две базы: `kav` "
+        "(Сервер администрирования) и `iamdb` (служба IAM), поэтому дамп делается для обеих. "
+        "Выполняйте его ежедневно по расписанию (cron) и перед любыми обновлениями. Состав и порядок "
+        "операций показаны на рисунке 7."))
 B(("code", [
     "mkdir -p /backup/mariadb",
     "mariadb-dump --single-transaction --routines --triggers --events \\",
-    "  --databases kav > /backup/mariadb/kav_$(date +%F_%H%M).sql",
-    "gzip -9 /backup/mariadb/kav_$(date +%F_%H%M).sql",
+    "  --databases kav iamdb > /backup/mariadb/ksc_$(date +%F_%H%M).sql",
+    "gzip -9 /backup/mariadb/ksc_$(date +%F_%H%M).sql",
     "ls -lh /backup/mariadb/",
 ]))
 B(("p", "Пример задания cron (ежедневно в 02:30, хранение 14 дней):"))
 B(("code", [
     "cat > /etc/cron.d/ksc-backup <<'EOF'",
-    "30 2 * * * root mariadb-dump --single-transaction --routines --triggers --events --databases kav \\",
-    "  | gzip -9 > /backup/mariadb/kav_$(date +\\%F).sql.gz",
-    "40 2 * * * root find /backup/mariadb -name 'kav_*.sql.gz' -mtime +14 -delete",
+    "30 2 * * * root mariadb-dump --single-transaction --routines --triggers --events --databases kav iamdb \\",
+    "  | gzip -9 > /backup/mariadb/ksc_$(date +\\%F).sql.gz",
+    "40 2 * * * root find /backup/mariadb -name 'ksc_*.sql.gz' -mtime +14 -delete",
     "EOF",
     "chmod 644 /etc/cron.d/ksc-backup",
 ]))
 B(("figure", {"path": "assets/fig_backup.png", "width_mm": 168,
-              "caption": "Рисунок 8. Схема резервного копирования: дамп БД и копия klbackup"}))
+              "caption": "Рисунок 7. Схема резервного копирования: дамп БД и копия klbackup"}))
 B(("warn", "Каталог `/backup` не должен находиться на том же физическом носителе, что и база: "
            "копии необходимо вывозить на отдельный сервер хранения. Проверяйте восстановление "
            "не реже одного раза в квартал."))
@@ -259,10 +291,10 @@ B(("p", "В Web Console аналогичная операция доступна
 
 B(("h2", "8.3. Восстановление"))
 B(("ol", [
-    "Остановите службы KSC: `systemctl stop klnagent_srv kladminserver_srv klactprx_srv klwebsrv_srv`.",
-    "Восстановите БД из дампа: `gunzip -c /backup/mariadb/kav_<дата>.sql.gz | mariadb`.",
+    "Остановите службы KSC: `systemctl stop kliam_srv kladminserver_srv klactprx_srv klwebsrv_srv klnagent_srv`.",
+    "Восстановите обе базы из дампа: `gunzip -c /backup/mariadb/ksc_<дата>.sql.gz | mariadb`.",
     "Восстановите данные Сервера администрирования: `/opt/kaspersky/ksc64/sbin/klbackup -restore -path /backup/ksc`.",
-    "Запустите службы: `systemctl start klnagent_srv kladminserver_srv klactprx_srv klwebsrv_srv`.",
+    "Запустите службы: `systemctl start klnagent_srv kladminserver_srv klactprx_srv klwebsrv_srv kliam_srv`.",
     "Проверьте вход в Web Console и состояние устройств (раздел 7.6).",
 ]))
 B(("note", "После восстановления из резервной копии может потребоваться повторная установка "
@@ -278,7 +310,7 @@ B(("code", [
     "# 2. Сервер администрирования:",
     "cd /root/ksc_install",
     "apt install ./ksc64_<новая_версия>_amd64.deb",
-    "systemctl restart klnagent_srv kladminserver_srv klactprx_srv klwebsrv_srv",
+    "systemctl restart klnagent_srv kladminserver_srv klactprx_srv klwebsrv_srv kliam_srv",
     "",
     "# 3. Web Console (используется тот же /etc/ksc-web-console-setup.json):",
     "dpkg -i ksc-web-console-<новая_версия>.x86_64.deb",
@@ -286,10 +318,13 @@ B(("code", [
     "",
     "# 4. Проверка:",
     "systemctl --no-pager status 'kl*_srv' 'KSC*' | grep -E 'Active|failed'",
+    "# ожидается: 5 служб kl*_srv и 5 служб KSC* в состоянии active",
 ]))
-B(("warn", "Web Console должна быть совместима с версией Сервера администрирования. Например, "
-           "Web Console 15.2 поддерживает Серверы администрирования 15.2, 15.1 и 15. Не обновляйте "
-           "консоль на версию, которая не поддерживает установленный сервер."))
+B(("warn", "Версия Web Console должна совпадать с версией Сервера администрирования: консоль 17 "
+           "работает с сервером 17, консоль предыдущих версий с сервером 17 несовместима. Обновляйте "
+           "сначала Сервер администрирования, затем Web Console — и обязательно сохраните файл "
+           "`/etc/ksc-web-console-setup.json`: при смене версии сервера блок `trusted` может потребовать "
+           "актуализации сертификатов IAM."))
 
 B(("h2", "8.5. Регламент обслуживания"))
 B(("table", {
@@ -297,7 +332,7 @@ B(("table", {
     "widths": [34, 20, 46],
     "rows": [
         ["Проверка служб и свободного места", "Ежедневно",
-         "`systemctl is-active kl*_srv`; `df -h /var/opt/kaspersky`"],
+         "`systemctl is-active kl*_srv`; `df -h /var/opt/kaspersky /var/lib/mysql`"],
         ["Резервная копия БД и настроек", "Ежедневно", "Разделы 8.1, 8.2"],
         ["Проверка задач и событий в Web Console", "Ежедневно", "Мониторинг → Панель управления"],
         ["Обновление баз на устройствах", "По расписанию задачи", "Задачи → «Обновление»"],
@@ -311,6 +346,7 @@ B(("table", {
 B(("h2", "8.6. Журналы и диагностика"))
 B(("code", [
     "journalctl -u kladminserver_srv -n 200 --no-pager",
+    "journalctl -u kliam_srv -n 100 --no-pager",
     "journalctl -u klwebsrv_srv -n 100 --no-pager",
     "journalctl -u 'KSC*' -n 100 --no-pager",
     "ls -lh /var/log/kaspersky/",
