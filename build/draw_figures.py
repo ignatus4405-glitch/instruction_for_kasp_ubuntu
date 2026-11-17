@@ -94,7 +94,7 @@ def roadmap(path):
 
 # ------------------------------------------------------------------ 2. порты
 def ports(path):
-    W, H = 1700, 640
+    W, H = 1700, 672
     img = Image.new("RGB", (W, H), WHITE)
     d = ImageDraw.Draw(img)
 
@@ -143,18 +143,18 @@ def ports(path):
         y += 27
 
     # СУБД
-    rbox(d, (870, 370, 1240, 500), radius=12, fill=WHITE, outline=BLUE, width=3)
-    text_center(d, 1055, 384, "СУБД MariaDB 11.8", F(20, True), STEEL)
-    text_center(d, 1055, 410, "БД kav · iamdb", F(16), GREY)
-    text_center(d, 1055, 436, "3306/TCP", F(22, True), ACCENT)
-    text_center(d, 1055, 470, "только 127.0.0.1", F(17), GREY)
+    rbox(d, (870, 370, 1250, 500), radius=12, fill=WHITE, outline=BLUE, width=3)
+    text_center(d, 1060, 384, "СУБД MariaDB 11.8", F(20, True), STEEL)
+    text_center(d, 1060, 410, "БД kav · iamdb", F(16), GREY)
+    text_center(d, 1060, 436, "3306/TCP", F(22, True), ACCENT)
+    text_center(d, 1060, 470, "только 127.0.0.1", F(17), GREY)
 
-    # вариант Б
-    rbox(d, (1300, 370, 1620, 500), radius=12, fill=WHITE, outline=ACCENT, width=3)
-    text_center(d, 1460, 386, "Web Console", F(20, True), ACCENT)
-    text_center(d, 1460, 414, "(вариант Б)", F(18), GREY)
-    text_center(d, 1460, 446, "kws01 · 192.168.10.11", F(17), GREY)
-    text_center(d, 1460, 472, "8080/TCP", F(17), GREY)
+    # локальные соединения
+    rbox(d, (1310, 370, 1620, 500), radius=12, fill=LIGHT, outline=STEEL, width=2)
+    text_center(d, 1465, 390, "Все компоненты", F(18, True), STEEL)
+    text_center(d, 1465, 416, "на одном сервере:", F(18, True), STEEL)
+    text_center(d, 1465, 446, "3306 · 13299 · 4444 · 9050", F(16), GREY)
+    text_center(d, 1465, 470, "только 127.0.0.1", F(16), GREY)
 
     # связи
     arrow(d, (340, 140), (440, 140))
@@ -166,9 +166,6 @@ def ports(path):
     arrow(d, (1055, 300), (1055, 370))
     label(d, 1072, 318, "SQL · 3306", F(17))
 
-    arrow(d, (1460, 370), (1460, 300))
-    label(d, 1476, 330, "13299/TLS", F(16))
-
     # устройства — к службам (ломаная)
     d.line([(340, 470), (815, 470)], fill=BLUE, width=3)
     d.line([(815, 470), (815, 250)], fill=BLUE, width=3)
@@ -176,9 +173,11 @@ def ports(path):
     d.text((352, 424), "13000/TCP+TLS", font=F(17), fill=ACCENT)
     d.text((352, 448), "15000/UDP", font=F(17), fill=ACCENT)
 
-    d.text((40, 580), "Порты указаны по умолчанию; изменяются в файле ответов (PORT_SRV, PORT_SRV_SSL, PORT_KLOAPI, PORT_GUI).",
+    d.text((40, 580), "Все компоненты установлены на одной виртуальной машине; порты — по умолчанию.",
            font=F(17), fill=GREY)
-    d.text((40, 606), "Полная таблица портов — приложение А.", font=F(17), fill=GREY)
+    d.text((40, 606), "Наружу публикуются только 8080 и 13000; изменяются в файле ответов "
+                      "(PORT_SRV, PORT_SRV_SSL, PORT_KLOAPI, PORT_GUI).", font=F(17), fill=GREY)
+    d.text((40, 632), "Полная таблица портов — приложение А.", font=F(17), fill=GREY)
 
     img.save(path, dpi=(200, 200))
 
