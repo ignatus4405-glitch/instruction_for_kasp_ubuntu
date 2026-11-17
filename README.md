@@ -12,10 +12,16 @@
 
 | Файл | Описание |
 | --- | --- |
-| `docs/Инструкция_Ubuntu_Server_и_Kaspersky_Security_Center.pdf` | PDF, A4, с обложкой, оглавлением с номерами страниц, закладками и 7 иллюстрациями |
-| `docs/Инструкция_Ubuntu_Server_и_Kaspersky_Security_Center.docx` | DOCX (Word), A4, с обложкой, автособираемым оглавлением, колонтитулами и нумерацией страниц |
+| `docs/Инструкция_Ubuntu_Server_и_Kaspersky_Security_Center.pdf` | PDF, A4, с обложкой, кликабельным оглавлением (переход к разделу), закладками и 7 иллюстрациями |
+| `docs/Инструкция_Ubuntu_Server_и_Kaspersky_Security_Center.docx` | DOCX (Word), A4, с обложкой, автоматическим оглавлением-ссылками, колонтитулами и нумерацией страниц |
 
 Содержание документов идентично: это один и тот же текст и одни и те же иллюстрации, собранные из общего источника.
+
+**Навигация.** В PDF каждая строка оглавления — внутренняя ссылка: щелчок открывает соответствующий
+раздел (ссылка ведёт прямо к заголовку, а не только на страницу). Дополнительно доступны закладки
+на панели навигации PDF. В DOCX оглавление собирается автоматически при открытии документа
+(в Word — по полю `TOC`), строки являются ссылками; если оглавление осталось пустым,
+выделите его и нажмите `F9`.
 
 ## Что внутри инструкции
 
@@ -81,7 +87,7 @@ docs/                   готовые PDF и DOCX
 Требуется Python 3.10+ и пакеты:
 
 ```bash
-pip install reportlab python-docx pillow
+pip install reportlab python-docx pillow pymupdf
 ```
 
 Затем:
@@ -89,7 +95,7 @@ pip install reportlab python-docx pillow
 ```bash
 python3 build/draw_schemes.py    # при необходимости перерисовать схемы
 python3 build/draw_figures.py    # перерисовать остальные иллюстрации
-python3 build/render_pdf.py      # -> docs/*.pdf
+python3 build/render_pdf.py      # -> docs/*.pdf (и кликабельное оглавление, нужен pymupdf)
 python3 build/render_docx.py     # -> docs/*.docx
 ```
 

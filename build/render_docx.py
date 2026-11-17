@@ -416,8 +416,10 @@ class Builder:
         add_field(p, r' TOC \o "1-2" \h \z \u ',
                   "Оглавление формируется автоматически: выделите его и нажмите F9.")
         p = doc.add_paragraph()
-        set_run_font(p.add_run("Если оглавление не отобразилось, щёлкните по нему правой кнопкой мыши "
-                               "и выберите «Обновить поле»."), BODY_FONT, 8, italic=True, color=GREY)
+        set_run_font(p.add_run("Оглавление собирается автоматически при открытии документа; строки — "
+                               "ссылки, щелчок открывает соответствующий раздел. Если оглавление "
+                               "осталось пустым, щёлкните по нему правой кнопкой мыши и выберите "
+                               "«Обновить поле» (или нажмите F9)."), BODY_FONT, 8, italic=True, color=GREY)
 
         doc.add_paragraph()
         t = doc.add_table(rows=1, cols=1)
@@ -653,11 +655,17 @@ class Builder:
             elif kind == "pagebreak":
                 self.doc.add_page_break()
 
-        # автообновление полей при открытии
+        # автообновление полей при открытии: оглавление собирается само и становится
+        # кликабельным (w:updateFields должен стоять до w:compat — порядок элементов схемы)
         settings = self.doc.settings.element
-        update = OxmlElement("w:updateFields")
-        update.set(qn("w:val"), "true")
-        settings.append(update)
+        if settings.find(qn("w:updateFields")) is None:
+            update = OxmlElement("w:updateFields")
+            update.set(qn("w:val"), "true")
+            compat = settings.find(qn("w:compat"))
+            if compat is not None:
+                compat.addprevious(update)
+            else:
+                settings.append(update)
 
         out = os.path.join(ROOT, "docs", "Инструкция_Ubuntu_Server_и_Kaspersky_Security_Center.docx")
         self.doc.save(out)

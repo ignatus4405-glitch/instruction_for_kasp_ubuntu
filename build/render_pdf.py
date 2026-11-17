@@ -339,6 +339,11 @@ def build():
         "toctitle", fontName="DJV-B", fontSize=16, leading=20, textColor=STEEL, spaceAfter=12)))
     story.append(Spacer(1, 4))
     story.append(toc)
+    story.append(Spacer(1, 8))
+    story.append(Paragraph(
+        "Названия разделов в оглавлении — ссылки: щёлкните по строке, чтобы открыть "
+        "соответствующий раздел. Закладки разделов также доступны на панели навигации PDF.",
+        ParagraphStyle("tochint", fontName="DJV", fontSize=8.4, leading=11.5, textColor=GREY)))
 
     conv_lines = "<br/>".join("•&nbsp;&nbsp;" + to_rl_markup(item) for item in meta.CONVENTIONS)
     conv = Paragraph(
@@ -410,7 +415,85 @@ def build():
         story.pop()
 
     doc.multiBuild(story, canvasmaker=NumberedCanvas)
+    fix_toc_links(out)
     print("PDF:", out, os.path.getsize(out) // 1024, "KB")
+
+def fix_toc_links(path):
+    """Делает строки оглавления кликабельными: ссылка ведёт на страницу и позицию заголовка,
+    номер которой указан в этой строке. Reportlab пишет внутренние ссылки оглавления без
+    корректного адресата, поэтому адресаты расставляются здесь по фактическим данным PDF."""
+    try:
+        import pymupdf
+    except ImportError:
+        print("PyMuPDF не установлен: ссылки оглавления не исправлены (pip install pymupdf)")
+        return
+
+    doc = pymupdf.open(path)
+
+    def lines_of(pno):
+        out = []
+        for block in doc[pno].get_text("dict")["blocks"]:
+            for line in block.get("lines", []):
+                txt = "".join(sp["text"] for sp in line["spans"]).strip()
+                if txt:
+                    out.append((txt, line["bbox"][0], line["bbox"][1]))
+        return out
+
+    cache = {}
+    total = 0
+    for page in doc:
+        links = [l for l in page.get_links()
+                 if l.get("kind") == pymupdf.LINK_GOTO and l.get("page") == 0]
+        if not links:
+            continue
+        words = page.get_text("words")
+        links.sort(key=lambda l: l["from"].y0)
+        rows = []
+        for lnk in links:
+            mid = (lnk["from"].y0 + lnk["from"].y1) / 2
+            if rows and abs(rows[-1][0] - mid) <= 6:
+                rows[-1][1].append(lnk)
+            else:
+                rows.append([mid, [lnk]])
+        for mid, row_links in rows:
+            row_words = sorted((w for w in words if w[1] - 1 <= mid <= w[3] + 1),
+                               key=lambda w: w[0])
+            if len(row_words) < 2:
+                continue
+            label = row_words[-1][4].strip().rstrip(".")
+            if not label.isdigit():
+                continue
+            target = int(label) - 1
+            if not 0 <= target < doc.page_count:
+                continue
+            title = " ".join(w[4] for w in row_words[:-1] if w[4].strip(".")).strip()
+            if target not in cache:
+                cache[target] = lines_of(target)
+            dest = pymupdf.Point(0, 0)
+            if title:
+                probe = title[:24].lower()
+                for txt, x0, y0 in cache[target]:
+                    if txt.lower().startswith(probe[:len(txt)]) or probe in txt.lower():
+                        dest = pymupdf.Point(x0, y0)
+                        break
+            rect = pymupdf.Rect(min(w[0] for w in row_words) - 2,
+                                min(w[1] for w in row_words) - 1,
+                                max(w[2] for w in row_words) + 2,
+                                max(w[3] for w in row_words) + 1)
+            for lnk in row_links:
+                try:
+                    page.delete_link(lnk)
+                except Exception:
+                    pass
+            page.insert_link({"kind": pymupdf.LINK_GOTO, "from": rect, "page": target,
+                              "to": dest, "zoom": 0})
+            total += 1
+
+    tmp = path + ".tmp"
+    doc.save(tmp, garbage=3, deflate=True)
+    doc.close()
+    os.replace(tmp, path)
+    print("Ссылки оглавления:", total)
 
 
 if __name__ == "__main__":
