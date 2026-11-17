@@ -60,12 +60,12 @@ def scheme_a(path):
     srv = (600, 40, 1200, 940)
     rbox(d, srv, radius=18, fill=LIGHT, outline=STEEL, width=4)
     text_center(d, 900, 66, "Сервер KSC — ksc01.company.local", F(28, True), STEEL)
-    text_center(d, 900, 106, "192.168.10.10 · Ubuntu Server 24.04 LTS", F(20), GREY)
+    text_center(d, 900, 106, "192.168.10.10 · Ubuntu Server 26.10", F(20), GREY)
 
     comps = [
         (["KSC Web Console"], ["Node.js · порт 8080 (HTTPS)"], 150),
-        (["Сервер администрирования"], ["klserver · 13000/TLS, 13299, 14000"], 360),
-        (["СУБД MariaDB 10.11"], ["БД kav · порт 3306 · только 127.0.0.1"], 580),
+        (["Сервер администрирования"], ["klserver · 13000/TLS, 13299, 14000 · kliam_srv"], 360),
+        (["СУБД MariaDB 11.8"], ["БД kav, iamdb · порт 3306 · только 127.0.0.1"], 580),
         (["Агент администрирования", "(серверная часть)"], ["klnagent · 15000/UDP, 13000/TCP"], 790),
     ]
     boxes = []
@@ -83,7 +83,7 @@ def scheme_a(path):
 
     # внутренние связи
     arrow(d, (900, boxes[0][3]), (900, boxes[1][1]))
-    label(d, 918, 296, "внутренний интерфейс", F(17), color=GREY)
+    label(d, 918, 296, "13299 + IAM 4444/9050", F(17), color=GREY)
     arrow(d, (900, boxes[1][3]), (900, boxes[2][1]))
     label(d, 918, 506, "SQL · 3306", F(17))
 
@@ -140,7 +140,7 @@ def scheme_b(path):
     wc = (400, 160, 900, 520)
     rbox(d, wc, radius=16, fill=LIGHT, outline=STEEL, width=4)
     text_center(d, 650, 186, "Сервер Web Console — kws01", F(24, True))
-    text_center(d, 650, 222, "192.168.10.11 · Ubuntu 24.04 LTS", F(18), GREY)
+    text_center(d, 650, 222, "192.168.10.11 · Ubuntu 26.10", F(18), GREY)
     b1 = (440, 280, 860, 460)
     rbox(d, b1, radius=12, fill=WHITE, outline=BLUE, width=3)
     text_center(d, 650, 306, "KSC Web Console", F(22, True))
@@ -152,7 +152,7 @@ def scheme_b(path):
     ksc = (1020, 120, 1520, 560)
     rbox(d, ksc, radius=16, fill=LIGHT, outline=STEEL, width=4)
     text_center(d, 1270, 146, "Сервер KSC — ksc01", F(24, True))
-    text_center(d, 1270, 182, "192.168.10.10 · Ubuntu 24.04 LTS", F(18), GREY)
+    text_center(d, 1270, 182, "192.168.10.10 · Ubuntu 26.10", F(18), GREY)
     b2 = (1060, 230, 1480, 360)
     rbox(d, b2, radius=12, fill=WHITE, outline=BLUE, width=3)
     text_center(d, 1270, 256, "Сервер администрирования", F(21, True))
@@ -160,8 +160,8 @@ def scheme_b(path):
     text_center(d, 1270, 326, "/var/opt/kaspersky/klnagent_srv", F(17), GREY)
     b3 = (1060, 420, 1480, 520)
     rbox(d, b3, radius=12, fill=WHITE, outline=BLUE, width=3)
-    text_center(d, 1270, 442, "СУБД MariaDB 10.11", F(21, True))
-    text_center(d, 1270, 480, "БД kav · порт 3306", F(19), GREY)
+    text_center(d, 1270, 442, "СУБД MariaDB 11.8", F(21, True))
+    text_center(d, 1270, 480, "БД kav, iamdb · порт 3306", F(19), GREY)
     arrow(d, (1270, b2[3]), (1270, b3[1]))
     label(d, 1286, 384, "SQL", F(17))
 

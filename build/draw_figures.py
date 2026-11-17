@@ -60,7 +60,7 @@ def roadmap(path):
 
     steps = [
         ("Подготовка", "раздел 2"),
-        ("Ubuntu Server\n24.04 LTS", "раздел 3"),
+        ("Ubuntu Server\n26.10", "раздел 3"),
         ("СУБД MariaDB", "раздел 4"),
         ("Сервер\nадминистрирования", "раздел 5"),
         ("Web Console", "раздел 6"),
@@ -117,7 +117,7 @@ def ports(path):
 
     # сервер
     rbox(d, (400, 30, 1660, 545), radius=18, fill=LIGHT, outline=STEEL, width=4)
-    d.text((432, 52), "Сервер KSC — ksc01.company.local · 192.168.10.10 · Ubuntu Server 24.04 LTS",
+    d.text((432, 52), "Сервер KSC — ksc01.company.local · 192.168.10.10 · Ubuntu Server 26.10",
            font=F(23, True), fill=STEEL)
 
     # Web Console
@@ -134,18 +134,20 @@ def ports(path):
     rows = [("kladminserver_srv", "14000/TCP — внутренний порт"),
             ("klactprx_srv", "13299/TCP+TLS — Web Console, OpenAPI"),
             ("klwebsrv_srv", "внутренний веб-сервер"),
+            ("kliam_srv", "4444/TCP · 9050/TCP — служба IAM"),
             ("Агенты администрирования", "13000/TCP+TLS · 15000/UDP")]
-    y = 166
+    y = 160
     for name, note in rows:
-        d.text((896, y), name, font=F(18, True), fill=STEEL)
-        d.text((1250, y + 2), note, font=MONO(15), fill=GREY)
-        y += 33
+        d.text((896, y), name, font=F(17, True), fill=STEEL)
+        d.text((1250, y + 2), note, font=MONO(14), fill=GREY)
+        y += 27
 
     # СУБД
     rbox(d, (870, 370, 1240, 500), radius=12, fill=WHITE, outline=BLUE, width=3)
-    text_center(d, 1055, 388, "СУБД MariaDB 10.11 · БД kav", F(20, True), STEEL)
-    text_center(d, 1055, 424, "3306/TCP", F(24, True), ACCENT)
-    text_center(d, 1055, 462, "только 127.0.0.1", F(17), GREY)
+    text_center(d, 1055, 384, "СУБД MariaDB 11.8", F(20, True), STEEL)
+    text_center(d, 1055, 410, "БД kav · iamdb", F(16), GREY)
+    text_center(d, 1055, 436, "3306/TCP", F(22, True), ACCENT)
+    text_center(d, 1055, 470, "только 127.0.0.1", F(17), GREY)
 
     # вариант Б
     rbox(d, (1300, 370, 1620, 500), radius=12, fill=WHITE, outline=ACCENT, width=3)
@@ -198,7 +200,7 @@ def installer_network(path):
     d = ImageDraw.Draw(img)
 
     box = (30, 20, W - 30, H - 20)
-    _terminal(d, box, "Network configuration", "Ubuntu Server 24.04 LTS — Subiquity")
+    _terminal(d, box, "Network configuration", "Ubuntu Server 26.10 — Subiquity")
 
     # список интерфейсов
     d.text((70, 104), "Интерфейс", font=MONO_B(19), fill=TERM_DIM)
@@ -244,13 +246,14 @@ def installer_network(path):
 
 # ------------------------------------------------------------------ 4. разметка диска
 def storage(path):
-    W, H = 1700, 556
+    W, H = 1700, 612
     img = Image.new("RGB", (W, H), WHITE)
     d = ImageDraw.Draw(img)
 
     left, right = 60, W - 60
     total_w = right - left
     EFI_COL = "#9FB0C6"
+    BOOT_COL = "#7FA6CE"
     VAR_COL = "#5D93C8"
 
     def bar(y, parts, height=88):
@@ -279,21 +282,23 @@ def storage(path):
             x += w
 
     d.text((left, 34), "Диск /dev/sda — 120 ГБ (GPT, UEFI)", font=F(23, True), fill=STEEL)
-    bar(74, [("/boot/efi", "1 ГБ", EFI_COL, STEEL, 1, 95),
-             ("LVM: группа ubuntu-vg", "119 ГБ", STEEL, WHITE, 119, 0)])
+    bar(74, [("/boot/efi", "1 ГБ", EFI_COL, STEEL, 1, 136),
+             ("/boot", "2 ГБ", BOOT_COL, WHITE, 2, 120),
+             ("LVM: группа ubuntu-vg", "117 ГБ", STEEL, WHITE, 117, 0)])
 
     d.text((left, 196), "Группа томов ubuntu-vg — логические тома", font=F(23, True), fill=STEEL)
     bar(236, [("ubuntu-lv  /", "60 ГБ · ext4", BLUE, WHITE, 60, 0),
               ("var-lv  /var", "40 ГБ · ext4", VAR_COL, WHITE, 40, 0),
               ("swap", "12 ГБ", ACCENT, WHITE, 12, 0),
-              ("свободно", "7 ГБ", SOFT, GREY, 7, 0)])
+              ("свободно", "5 ГБ", SOFT, GREY, 5, 0)])
 
     items = [
         (EFI_COL, "/boot/efi", "1 ГБ, FAT32 — обязателен при загрузке UEFI (для Legacy BIOS не создаётся)"),
+        (BOOT_COL, "/boot", "2 ГБ, ext4 — вне LVM/LUKS/ZFS: требование установщика Ubuntu 26.10"),
         (BLUE, "/ (ubuntu-lv)", "60 ГБ — ОС, пакеты KSC (/opt/kaspersky/ksc64), журналы, обновления"),
         (VAR_COL, "/var (var-lv)", "40 ГБ — БД и данные: /var/lib/mysql, /var/opt/kaspersky/klnagent_srv"),
         (ACCENT, "swap", "12 ГБ — не менее 1,5 × объёма ОЗУ (при 8 ГБ ОЗУ)"),
-        (SOFT, "свободно", "7 ГБ — резерв для роста БД и обновлений; размеры не в масштабе"),
+        (SOFT, "свободно", "5 ГБ — резерв для роста БД и обновлений; размеры не в масштабе"),
     ]
     y = 366
     for col, name, note in items:
@@ -337,7 +342,7 @@ def webconsole(path):
 
     # заголовок раздела
     d.text((390, 116), "Мониторинг", font=F(28, True), fill=STEEL)
-    d.text((390, 156), "ksc01.company.local · Сервер администрирования 15.2 · лицензия активна",
+    d.text((390, 156), "ksc01.company.local · Сервер администрирования 17 · лицензия активна",
            font=F(17), fill=GREY)
 
     # карточки
@@ -394,8 +399,8 @@ def backup(path):
             text_center(d, cx, ty, line, F(19), GREY)
             ty += 26
 
-    box((40, 50, 470, 185), "СУБД MariaDB", "БД kav · /var/lib/mysql")
-    box((1000, 50, 1430, 185), "/backup/mariadb", "kav_ГГГГ-ММ-ДД.sql.gz\nхранение 14 дней", ACCENT)
+    box((40, 50, 470, 185), "СУБД MariaDB 11.8", "БД kav, iamdb · /var/lib/mysql")
+    box((1000, 50, 1430, 185), "/backup/mariadb", "ksc_ГГГГ-ММ-ДД.sql.gz\nхранение 14 дней", ACCENT)
     arrow(d, (470, 118), (1000, 118))
     label(d, 560, 78, "mariadb-dump, cron 02:30", F(19))
 

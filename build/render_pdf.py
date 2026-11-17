@@ -103,7 +103,7 @@ def cover(canv, doc):
     canv.setFont("DJV-B", 24)
     canv.setFillColor(colors.white)
     y = PAGE_H - 54 * mm
-    for line in ["Установка Ubuntu Server 24.04 LTS", "и развёртывание",
+    for line in ["Установка Ubuntu Server 26.10", "и развёртывание",
                  "Kaspersky Security Center"]:
         canv.drawString(LM, y, line)
         y -= 10.5 * mm
@@ -114,7 +114,7 @@ def cover(canv, doc):
     canv.setFont("DJV", 10.5)
     canv.setFillColor(GREY)
     canv.drawString(LM, PAGE_H - 107 * mm,
-                    "Kaspersky Security Center Linux 15.2 · MariaDB 10.11 · Web Console")
+                    "Kaspersky Security Center Linux 17 · MariaDB 11.8 · Web Console 17")
 
     # перечень содержания работ
     canv.setFillColor(STEEL)
@@ -139,7 +139,7 @@ def cover(canv, doc):
         ("Версия документа", meta.DOC_VERSION),
         ("Дата выпуска", meta.DOC_DATE),
         ("Статус", meta.DOC_STATUS),
-        ("Область применения", "Ubuntu Server 24.04 LTS, KSC Linux 15.2"),
+        ("Область применения", "Ubuntu Server 26.10, KSC Linux 17"),
         ("Разработал", meta.DOC_AUTHOR),
     ]
     canv.setFont("DJV", 9)
