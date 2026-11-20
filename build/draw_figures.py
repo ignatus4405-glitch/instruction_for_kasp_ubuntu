@@ -134,7 +134,7 @@ def ports(path):
     rows = [("kladminserver_srv", "14000/TCP — внутренний порт"),
             ("klactprx_srv", "13299/TCP+TLS — Web Console, OpenAPI"),
             ("klwebsrv_srv", "внутренний веб-сервер"),
-            ("kliam_srv", "4444/TCP · 9050/TCP — служба IAM"),
+            ("kliam_srv", "4444/TCP — браузеры · 9050/TCP — локально"),
             ("Агенты администрирования", "13000/TCP+TLS · 15000/UDP")]
     y = 160
     for name, note in rows:
@@ -153,12 +153,12 @@ def ports(path):
     rbox(d, (1310, 370, 1620, 500), radius=12, fill=LIGHT, outline=STEEL, width=2)
     text_center(d, 1465, 390, "Все компоненты", F(18, True), STEEL)
     text_center(d, 1465, 416, "на одном сервере:", F(18, True), STEEL)
-    text_center(d, 1465, 446, "3306 · 13299 · 4444 · 9050", F(16), GREY)
+    text_center(d, 1465, 446, "3306 · 13299 · 9050", F(16), GREY)
     text_center(d, 1465, 470, "только 127.0.0.1", F(16), GREY)
 
     # связи
     arrow(d, (340, 140), (440, 140))
-    label(d, 344, 100, "8080/TLS", F(17))
+    label(d, 344, 100, "8080/TLS · 4444/TLS", F(16))
 
     arrow(d, (760, 170), (870, 170))
     label(d, 764, 138, "13299/TLS", F(16))
@@ -175,8 +175,9 @@ def ports(path):
 
     d.text((40, 580), "Все компоненты установлены на одной виртуальной машине; порты — по умолчанию.",
            font=F(17), fill=GREY)
-    d.text((40, 606), "Наружу публикуются только 8080 и 13000; изменяются в файле ответов "
-                      "(PORT_SRV, PORT_SRV_SSL, PORT_KLOAPI, PORT_GUI).", font=F(17), fill=GREY)
+    d.text((40, 606), "Наружу публикуются 8080 и 4444 (рабочие места администраторов) и 13000 (агенты); "
+                      "порты изменяются в файле ответов (PORT_SRV, PORT_SRV_SSL, PORT_KLOAPI, PORT_GUI).",
+           font=F(17), fill=GREY)
     d.text((40, 632), "Полная таблица портов — приложение А.", font=F(17), fill=GREY)
 
     img.save(path, dpi=(200, 200))
