@@ -306,7 +306,7 @@ class Builder:
         p = doc.add_paragraph()
         p.paragraph_format.space_before = Pt(26)
         p.paragraph_format.space_after = Pt(2)
-        set_run_font(p.add_run("Практическое руководство"), BODY_FONT, 13, bold=True, color=STEEL)
+        set_run_font(p.add_run("Практическое руководство — пошагово, с указанием клавиш"), BODY_FONT, 13, bold=True, color=STEEL)
         p = doc.add_paragraph()
         set_run_font(p.add_run("Kaspersky Security Center Linux 17 · MariaDB 11.8 · Web Console 17"),
                      BODY_FONT, 10.5, color=GREY)

@@ -110,7 +110,7 @@ def cover(canv, doc):
 
     canv.setFillColor(colors.HexColor("#1A1A1A"))
     canv.setFont("DJV-B", 12.5)
-    canv.drawString(LM, PAGE_H - 100 * mm, "Практическое руководство")
+    canv.drawString(LM, PAGE_H - 100 * mm, "Практическое руководство — пошагово, с указанием клавиш")
     canv.setFont("DJV", 10.5)
     canv.setFillColor(GREY)
     canv.drawString(LM, PAGE_H - 107 * mm,
