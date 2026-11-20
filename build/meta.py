@@ -3,7 +3,7 @@
 
 DOC_TITLE = "Установка Ubuntu Server и развёртывание Kaspersky Security Center"
 DOC_SUBTITLE = "Kaspersky Security Center Linux 17 на Ubuntu Server 26.10"
-DOC_VERSION = "1.1"
+DOC_VERSION = "1.2"
 DOC_DATE = "17.11.2026"
 DOC_AUTHOR = "Служба технической поддержки ИТ-инфраструктуры"
 DOC_OWNER = "Владелец процесса: администратор информационной безопасности"

@@ -184,10 +184,10 @@ B(("code", [
     "GRANT SELECT, SHOW VIEW ON mysql.* TO 'KSCAdmin';",
     "GRANT SELECT, SHOW VIEW ON sys.* TO 'KSCAdmin';",
     "GRANT EXECUTE ON PROCEDURE sys.table_exists TO 'KSCAdmin';",
-    "GRANT PROCESS ON *.* TO 'KSCAdmin';",
-    "GRANT SUPER ON *.* TO 'KSCAdmin';",
+    "GRANT PROCESS, SUPER, SET USER ON *.* TO 'KSCAdmin';",
     "",
     "GRANT ALL ON iamdb.* TO 'KSCIAM';",
+    "GRANT PROCESS, SUPER, SET USER ON *.* TO 'KSCIAM';",
     "",
     "FLUSH PRIVILEGES;",
     "SHOW GRANTS FOR 'KSCAdmin';",
@@ -203,6 +203,8 @@ B(("table", {
         ["SELECT, SHOW VIEW ON mysql.*, sys.*", "Чтение системных представлений"],
         ["EXECUTE ON PROCEDURE sys.table_exists", "Проверка существования таблиц (не требуется для MariaDB 10.5 и старше)"],
         ["PROCESS, SUPER", "Глобальные привилегии, необходимые Серверу администрирования"],
+        ["SET USER", "Право создавать объекты СУБД с чужим `DEFINER` (обязательно начиная с MariaDB "
+                     "10.5.4: начиная с этой версии `SUPER` его не заменяет)"],
     ],
 }))
 B(("note", "Кодировка базы `kav` задаётся как `ascii` с сопоставлением `ascii_general_ci` — это "
@@ -453,3 +455,94 @@ B(("table", {
         ["/etc/init.d / systemd units", "Службы `kl*_srv`"],
     ],
 }))
+B(("h2", "5.10. Если postinstall.pl завершился ошибкой"))
+B(("p", "Сообщение установщика имеет вид `Fatal error: Server registration failed with code '3': "
+        "… '#1950 (1227) KLDB::DB_ERR_GENERAL'`. Здесь два кода: код KSC (`1950`) и в скобках — код "
+        "ошибки СУБД (`1227`). Искать причину нужно по коду в скобках: как правило, дело в правах "
+        "учётной записи СУБД или в её пароле, а не в самом KSC. Установка при этом не завершена: "
+        "службы `kl*_srv` могут быть созданы, но не работать."))
+B(("table", {
+    "head": ["Код СУБД", "Что означает", "Что делать"],
+    "widths": [13, 37, 50],
+    "rows": [
+        ["1227", "Учётной записи СУБД не хватает глобальной привилегии: `SUPER`, `SET USER`, "
+                 "`PROCESS` или `CREATE USER` — KSC создаёт представления и триггеры с собственным "
+                 "`DEFINER`", "Выдать права (раздел 5.10.1) и повторить `postinstall.pl`"],
+        ["1045", "`Access denied for user 'KSCAdmin'@'localhost'` — неверный пароль, имя учётной "
+                 "записи или не совпадает часть `@host`", "Проверить пароль и `SELECT user, host FROM "
+                 "mysql.user;`; при необходимости `ALTER USER … IDENTIFIED BY …` (раздел 5.10.1)"],
+        ["1044", "`Access denied for user … to database 'kav'` — нет прав на саму базу", "`GRANT ALL ON "
+                 "kav.* TO 'KSCAdmin';` и `GRANT ALL ON iamdb.* TO 'KSCIAM';`, затем `FLUSH PRIVILEGES;`"],
+        ["1049", "`Unknown database 'kav'` / `'iamdb'` — база не создана", "Создать базы (раздел 4.7)"],
+        ["2002 / 2003", "`Can't connect to local MySQL server` — СУБД не запущена или слушает другой "
+                        "адрес", "`systemctl status mariadb`, `ss -tlnp | grep 3306`, проверить "
+                        "`bind-address` в разделе 4.2"],
+        ["1129", "`Host 'localhost' is blocked` — слишком много неудачных попыток входа", "`mariadb-admin "
+                 "flush-hosts` (или перезапуск MariaDB), затем проверить пароль"],
+        ["1040", "`Too many connections`", "Увеличить `max_connections` (раздел 4.4) или остановить "
+                 "лишние подключения"],
+    ],
+}))
+B(("p", "Полезно посмотреть, что именно сообщает служба IAM: в журнале видны и текст SQL-ошибки, "
+        "и учётная запись, от имени которой выполнялся запрос."))
+B(("code", [
+    "journalctl -u kliam_srv -n 100 --no-pager | grep -i -E 'error|denied|1227'",
+    "journalctl -u kladminserver_srv -n 100 --no-pager | grep -i -E 'error|denied|1227'",
+    "journalctl -u mariadb -n 50 --no-pager",
+    "tail -n 50 /var/log/kaspersky/kladminserver/klserver.log",
+]))
+
+B(("h3", "5.10.1. Ошибка 1227: выдача недостающих прав"))
+B(("p", "Сначала посмотрите, какие права уже выданы и под какой частью `@host` созданы учётные записи:"))
+B(("code", [
+    "mariadb -e \"SELECT user, host FROM mysql.user WHERE user IN ('KSCAdmin','KSCIAM');\"",
+    "mariadb -e \"SHOW GRANTS FOR 'KSCAdmin';\"",
+    "mariadb -e \"SHOW GRANTS FOR 'KSCIAM';\"",
+]))
+B(("p", "Убедитесь, что каждая учётная запись подключается по TCP и видит свою базу (пароли "
+        "запрашиваются интерактивно):"))
+B(("code", [
+    "mariadb -h 127.0.0.1 -u KSCAdmin -p -e \"USE kav; SELECT DATABASE();\"",
+    "mariadb -h 127.0.0.1 -u KSCIAM   -p -e \"USE iamdb; SELECT DATABASE();\"",
+]))
+B(("p", "Затем выдайте обеим учётным записям недостающие глобальные привилегии и повторите проверку:"))
+B(("code", [
+    "mariadb",
+    "GRANT ALL ON kav.* TO 'KSCAdmin';",
+    "GRANT SELECT, SHOW VIEW ON mysql.* TO 'KSCAdmin';",
+    "GRANT SELECT, SHOW VIEW ON sys.* TO 'KSCAdmin';",
+    "GRANT EXECUTE ON PROCEDURE sys.table_exists TO 'KSCAdmin';",
+    "GRANT PROCESS, SUPER, SET USER ON *.* TO 'KSCAdmin';",
+    "GRANT ALL ON iamdb.* TO 'KSCIAM';",
+    "GRANT PROCESS, SUPER, SET USER ON *.* TO 'KSCIAM';",
+    "FLUSH PRIVILEGES;",
+    "SHOW GRANTS FOR 'KSCAdmin';",
+    "SHOW GRANTS FOR 'KSCIAM';",
+    "EXIT;",
+]))
+B(("note", "`SET USER` появилась в MariaDB 10.5.4: начиная с этой версии привилегия `SUPER` больше не "
+           "позволяет создавать объекты с чужим `DEFINER`, а KSC создаёт такие объекты при инициализации "
+           "базы. Отсюда типичная ошибка `1227` на установках с MariaDB 11.x. В MySQL такой привилегии "
+           "нет — при использовании MySQL строку с `SET USER` пропустите."))
+B(("warn", "Не ограничивайте права «минимально необходимым» наугад: если урезать `PROCESS`/`SUPER`/`SET USER` "
+           "после успешной установки, Сервер администрирования перестанет запускаться или потеряет "
+           "возможность обслуживать базу. Возвращайте права к документированной схеме (раздел 4.7)."))
+
+B(("h3", "5.10.2. Чистый повтор установки"))
+B(("p", "Если после исправления прав установка всё равно завершается ошибкой, начните с пустых баз: "
+        "данных в них ещё нет, повторная настройка безопасна."))
+B(("code", [
+    "systemctl stop klnagent_srv kladminserver_srv klactprx_srv klwebsrv_srv kliam_srv 2>/dev/null",
+    "mariadb -e \"DROP DATABASE IF EXISTS kav; DROP DATABASE IF EXISTS iamdb;\"",
+    "mariadb -e \"CREATE DATABASE kav DEFAULT CHARACTER SET ascii DEFAULT COLLATE ascii_general_ci;\"",
+    "mariadb -e \"CREATE DATABASE iamdb;\"",
+    "mariadb -e \"SHOW DATABASES;\"",
+    "/opt/kaspersky/ksc64/lib/bin/setup/postinstall.pl",
+]))
+B(("note", "Вопросы установщика повторяются с самого начала (раздел 5.5): лицензия, параметры Сервера "
+           "администрирования, затем параметры IAM. Повторный запуск перезаписывает ранее введённые "
+           "значения, поэтому удобно заранее подготовить ответы в файле (раздел 5.8)."))
+B(("warn", "Базу `iamdb` нельзя удалять на работающем сервере: в ней хранятся учётные записи и токены "
+           "службы IAM. При деинсталляции KSC она также не удаляется автоматически — это нужно делать "
+           "вручную и осознанно."))
+
