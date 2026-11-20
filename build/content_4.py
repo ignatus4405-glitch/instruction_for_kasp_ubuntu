@@ -64,7 +64,7 @@ B(("p", "**Причина.** MariaDB не смогла применить `table
         "лимита файловых дескрипторов."))
 B(("p", "**Решение.** Увеличьте `LimitNOFILE` для службы MariaDB (рекомендуемое значение — 1048576):"))
 B(("code", [
-    "systemctl edit mariadb.service      # [Service] LimitNOFILE=1048576",
+    "systemctl edit mariadb.service      # ввести [Service] и LimitNOFILE=1048576, затем Ctrl+O, Enter, Ctrl+X",
     "systemd-analyze verify mariadb.service",
     "systemctl daemon-reload",
     "systemctl restart mariadb",
@@ -302,6 +302,10 @@ B(("table", {
     "rows": [
         ["1.0", "17.11.2026", "Первая редакция: установка Ubuntu Server 26.10, СУБД MariaDB 11.8, "
                               "KSC Linux 17 (с базой IAM) и Web Console 17",
+         "Служба технической поддержки"],
+        ["1.1", "17.11.2026", "Пошаговое изложение с указанием нажимаемых клавиш: раздел 1.8 (клавиши, "
+                              "вставка команд, редактор nano), переработанные разделы 3.1–3.9 (экраны "
+                              "установщика), 3.10, 4.5, 5.5 и 6.4; кликабельное оглавление в PDF и DOCX",
          "Служба технической поддержки"],
     ],
 }))
